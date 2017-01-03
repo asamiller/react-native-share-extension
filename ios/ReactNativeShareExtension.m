@@ -27,7 +27,7 @@ RCT_EXPORT_MODULE();
 
  UIView *rootView = [self shareView];
  if (rootView.backgroundColor == nil) {
-   rootView.backgroundColor = [[UIColor alloc] initWithRed:1 green:1 blue:1 alpha:0.1];
+   rootView.backgroundColor = [[UIColor alloc] initWithRed:0 green:0 blue:0 alpha:0.1];
  }
 
  self.view = rootView;
@@ -83,9 +83,24 @@ RCT_REMAP_METHOD(data,
    }else if (imageProvider){
        [imageProvider loadItemForTypeIdentifier:IMAGE_IDENTIFIER options:nil completionHandler:^(id<NSSecureCoding> item, NSError *error) {
            NSURL *url = (NSURL *)item;
+           NSString *filename = [url lastPathComponent];
+           
+           NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+           NSString *basePath = paths.firstObject;
+           NSString *shareDir = [basePath stringByAppendingPathComponent:@"share"];
+           NSURL *destUrl = [[NSURL fileURLWithPath:shareDir] URLByAppendingPathComponent:filename];
+           
+           [[NSFileManager defaultManager] createDirectoryAtPath:shareDir withIntermediateDirectories:YES attributes:nil error:nil];
+           
+           NSError *writeError = nil;
+           BOOL success = [[NSFileManager defaultManager] copyItemAtURL:url toURL:destUrl error:&writeError];
+           
+           NSLog(@"%@", [writeError localizedDescription]);
+           
+           NSLog(@"Write file done %d", success);
 
            if(callback) {
-               callback(url,[[[url absoluteString] pathExtension] lowercaseString] ,nil);
+               callback(destUrl,[[[url absoluteString] pathExtension] lowercaseString] ,nil);
            }
        }];
 
