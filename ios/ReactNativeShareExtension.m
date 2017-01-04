@@ -45,17 +45,17 @@ RCT_REMAP_METHOD(data,
                 resolver:(RCTPromiseResolveBlock)resolve
                 rejecter:(RCTPromiseRejectBlock)reject)
 {
- [self extractDataFromContext: extensionContext withCallback:^(NSURL* url,NSString* contentType ,NSException* err) {
+ [self extractDataFromContext: extensionContext withCallback:^(NSString *url, NSString *contentType, NSException *err) {
    NSDictionary *inventory = @{
      @"type": contentType,
-     @"value": [url absoluteString]
+     @"value": url
    };
 
    resolve(inventory);
  }];
 }
 
-- (void)extractDataFromContext:(NSExtensionContext *)context withCallback:(void(^)(NSURL *url, NSString* contentType ,NSException *exception))callback {
+- (void)extractDataFromContext:(NSExtensionContext *)context withCallback:(void(^)(NSString *url, NSString *contentType, NSException *exception))callback {
  @try {
    NSExtensionItem *item = [context.inputItems firstObject];
    NSArray *attachments = item.attachments;
@@ -77,30 +77,15 @@ RCT_REMAP_METHOD(data,
        NSURL *url = (NSURL *)item;
 
        if(callback) {
-         callback(url,@"text/plain" ,nil);
+         callback([url absoluteString], @"text/plain", nil);
        }
      }];
    }else if (imageProvider){
        [imageProvider loadItemForTypeIdentifier:IMAGE_IDENTIFIER options:nil completionHandler:^(id<NSSecureCoding> item, NSError *error) {
            NSURL *url = (NSURL *)item;
-           NSString *filename = [url lastPathComponent];
-           
-           NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
-           NSString *basePath = paths.firstObject;
-           NSString *shareDir = [basePath stringByAppendingPathComponent:@"share"];
-           NSURL *destUrl = [[NSURL fileURLWithPath:shareDir] URLByAppendingPathComponent:filename];
-           
-           [[NSFileManager defaultManager] createDirectoryAtPath:shareDir withIntermediateDirectories:YES attributes:nil error:nil];
-           
-           NSError *writeError = nil;
-           BOOL success = [[NSFileManager defaultManager] copyItemAtURL:url toURL:destUrl error:&writeError];
-           
-           NSLog(@"%@", [writeError localizedDescription]);
-           
-           NSLog(@"Write file done %d", success);
 
            if(callback) {
-               callback(destUrl,[[[url absoluteString] pathExtension] lowercaseString] ,nil);
+               callback(url.path, [[[url absoluteString] pathExtension] lowercaseString], nil);
            }
        }];
 
